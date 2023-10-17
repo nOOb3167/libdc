@@ -432,6 +432,7 @@ static const oceanic_common_version_t versions[] = {
 	{"HOLLDG03 \0\0 512K", 0,      DG03,          &oceanic_atom2b_layout},
 	{"AQUAI100 \0\0 512K", 0,      I100,          &oceanic_atom2b_layout},
 	{"AQUA300C \0\0 512K", 0,      I300C,         &oceanic_atom2b_layout},
+	{"AQUA300C \0\0 512K", 0,      I330R,         &oceanic_atom2b_layout},
 	{"OCEGEO40 \0\0 512K", 0,      GEO40,         &oceanic_atom2b_layout},
 	{"VEOSMART \0\0 512K", 0,      VEO40,         &oceanic_atom2b_layout},
 

@@ -108,7 +108,8 @@ oceanic_atom2_parser_create (dc_parser_t **out, dc_context_t *context, unsigned 
 		model == INSIGHT2 || model == ZEN ||
 		model == I300 || model == I550 ||
 		model == I200 || model == I200C ||
-		model == I300C || model == GEO40 ||
+		model == I300C || model == I330R ||
+		model == GEO40 ||
 		model == VEO40 || model == I470TC ||
 		model == GEOAIR) {
 		parser->headersize -= PAGESIZE;
