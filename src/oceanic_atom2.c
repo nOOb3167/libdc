@@ -848,6 +848,12 @@ oceanic_atom2_device_open (dc_device_t **out, dc_context_t *context, dc_iostream
 		return DC_STATUS_NOMEMORY;
 	}
 
+	status = dc_context_auth(context);
+	if (status != DC_STATUS_SUCCESS) {
+		ERROR(context, "Failed to set the authentication.");
+		goto error_free;
+	}
+
 	// Initialize the base class.
 	oceanic_common_device_init (&device->base);
 

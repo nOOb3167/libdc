@@ -95,9 +95,6 @@ dc_device_allocate (dc_context_t *context, const dc_device_vtable_t *vtable)
 	device->cancel_callback = NULL;
 	device->cancel_userdata = NULL;
 
-	device->auth_callback = NULL;
-	device->auth_userdata = NULL;
-
 	memset (&device->devinfo, 0, sizeof (device->devinfo));
 	memset (&device->clock, 0, sizeof (device->clock));
 
@@ -304,19 +301,6 @@ dc_device_set_events (dc_device_t *device, unsigned int events, dc_event_callbac
 
 
 dc_status_t
-dc_device_set_auth (dc_device_t *device, dc_auth_callback_t callback, void *userdata)
-{
-	if (device == NULL)
-		return DC_STATUS_UNSUPPORTED;
-
-	device->auth_callback = callback;
-	device->auth_userdata = userdata;
-
-	return DC_STATUS_SUCCESS;
-}
-
-
-dc_status_t
 dc_device_set_fingerprint (dc_device_t *device, const unsigned char data[], unsigned int size)
 {
 	if (device == NULL)
@@ -510,17 +494,6 @@ device_event_emit (dc_device_t *device, dc_event_type_t event, const void *data)
 		return;
 
 	device->event_callback (device, event, data, device->event_userdata);
-}
-
-
-void
-device_auth (dc_device_t *device, unsigned char data[], size_t size)
-{
-	// Check if there is a callback function registered.
-	if (device->auth_callback == NULL)
-		return;
-
-	device->auth_callback (device, data, size, device->auth_userdata);
 }
 
 

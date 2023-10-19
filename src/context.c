@@ -46,6 +46,7 @@ struct dc_context_t {
 	char msg[16384 + 32];
 	dc_timer_t *timer;
 #endif
+	dc_authfunc_data_t auth;
 };
 
 #ifdef ENABLE_LOGGING
@@ -131,6 +132,9 @@ dc_context_new (dc_context_t **out)
 	dc_timer_new (&context->timer);
 #endif
 
+	context->auth.func = NULL;
+	context->auth.userdata = NULL;
+
 	*out = context;
 
 	return DC_STATUS_SUCCESS;
@@ -178,6 +182,18 @@ dc_context_set_logfunc (dc_context_t *context, dc_logfunc_t logfunc, void *userd
 }
 
 dc_status_t
+dc_context_set_authfunc(dc_context_t* context, dc_authfunc_t authfunc, void* userdata)
+{
+	if (context == NULL)
+		return DC_STATUS_INVALIDARGS;
+
+	context->auth.func = authfunc;
+	context->auth.userdata = userdata;
+
+	return DC_STATUS_SUCCESS;
+}
+
+dc_status_t
 dc_context_log (dc_context_t *context, dc_loglevel_t loglevel, const char *file, unsigned int line, const char *function, const char *format, ...)
 {
 #ifdef ENABLE_LOGGING
@@ -200,6 +216,18 @@ dc_context_log (dc_context_t *context, dc_loglevel_t loglevel, const char *file,
 
 	context->logfunc (context, loglevel, file, line, function, context->msg, context->userdata);
 #endif
+
+	return DC_STATUS_SUCCESS;
+}
+
+dc_status_t
+dc_context_auth(dc_context_t* context)
+{
+	if (context == NULL)
+		return DC_STATUS_INVALIDARGS;
+
+	char a[1];
+	context->auth.func(context, a, 1, context->auth.userdata);
 
 	return DC_STATUS_SUCCESS;
 }

@@ -22,6 +22,8 @@
 #ifndef DC_CONTEXT_H
 #define DC_CONTEXT_H
 
+#include <stddef.h>
+
 #include "common.h"
 
 #ifdef __cplusplus
@@ -41,6 +43,13 @@ typedef enum dc_loglevel_t {
 
 typedef void (*dc_logfunc_t) (dc_context_t *context, dc_loglevel_t loglevel, const char *file, unsigned int line, const char *function, const char *message, void *userdata);
 
+typedef void (*dc_authfunc_t) (dc_context_t *context, unsigned char data[], size_t size, void *userdata);
+
+typedef struct dc_authfunc_data_t {
+	dc_authfunc_t func;
+	void *userdata;
+} dc_authfunc_data_t;
+
 dc_status_t
 dc_context_new (dc_context_t **context);
 
@@ -52,6 +61,9 @@ dc_context_set_loglevel (dc_context_t *context, dc_loglevel_t loglevel);
 
 dc_status_t
 dc_context_set_logfunc (dc_context_t *context, dc_logfunc_t logfunc, void *userdata);
+
+dc_status_t
+dc_context_set_authfunc (dc_context_t *context, dc_authfunc_t authfunc, void *userdata);
 
 unsigned int
 dc_context_get_transports (dc_context_t *context);
