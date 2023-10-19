@@ -68,8 +68,6 @@ typedef int (*dc_cancel_callback_t) (void *userdata);
 
 typedef void (*dc_event_callback_t) (dc_device_t *device, dc_event_type_t event, const void *data, void *userdata);
 
-typedef void (*dc_auth_callback_t) (dc_device_t *device, unsigned char data[], size_t size, void *userdata);
-
 typedef int (*dc_dive_callback_t) (const unsigned char *data, unsigned int size, const unsigned char *fingerprint, unsigned int fsize, void *userdata);
 
 dc_status_t
@@ -83,9 +81,6 @@ dc_device_set_cancel (dc_device_t *device, dc_cancel_callback_t callback, void *
 
 dc_status_t
 dc_device_set_events (dc_device_t *device, unsigned int events, dc_event_callback_t callback, void *userdata);
-
-dc_status_t
-dc_device_set_auth (dc_device_t *device, dc_auth_callback_t callback, void *userdata);
 
 dc_status_t
 dc_device_set_fingerprint (dc_device_t *device, const unsigned char data[], unsigned int size);

@@ -505,6 +505,80 @@ static const oceanic_common_version_t versions[] = {
 	{"AQUA770R \0\0 \0\0\0\0", 0,  I770R,         &aqualung_i770r_layout},
 };
 
+#define RRBUFS 21
+
+static dc_status_t
+oceanic_atom2_ble_writeRR_small(oceanic_atom2_device_t *device, const char cmd[4], const char data[], unsigned int size);
+
+static dc_status_t
+oceanic_atom2_ble_readRR_small (oceanic_atom2_device_t *device, unsigned char data[], unsigned int size, unsigned int *actual);
+
+dc_status_t
+oceanic_atom2_device_versionRR(dc_device_t *abstract, unsigned char data[], unsigned int size);
+
+static dc_status_t
+oceanic_atom2_ble_writeRR_small(oceanic_atom2_device_t* device, const char cmd[4], const char data[], unsigned int size)
+{
+	dc_status_t rc = DC_STATUS_SUCCESS;
+	unsigned char buf[RRBUFS] = {0};
+	char s = (char)size;
+	if (size > sizeof(buf) - 5)
+		ERROR(device->base.base.context, "Oversize packet???");
+	memcpy(buf + 0, cmd, 4);
+	memcpy(buf + 4, &s, 1);
+	memcpy(buf + 5, data, size);
+
+	rc = dc_iostream_write(device->iostream, buf, 5 + size, NULL);
+	if (rc != DC_STATUS_SUCCESS)
+		return rc;
+
+	return DC_STATUS_SUCCESS;
+}
+
+static dc_status_t
+oceanic_atom2_ble_readRR_small (oceanic_atom2_device_t *device, unsigned char data[], unsigned int size, unsigned int *actual)
+{
+	dc_status_t rc = DC_STATUS_SUCCESS;
+	dc_device_t *abstract = (dc_device_t *) device;
+
+	unsigned char buf[RRBUFS];
+	
+	size_t transferred = 0;
+	
+	rc = dc_iostream_read (device->iostream, buf, sizeof(buf), &transferred);
+	if (rc != DC_STATUS_SUCCESS)
+		return rc;
+
+	if (transferred < 4) {
+		ERROR (abstract->context, "Invalid packet size (" DC_PRINTF_SIZE ").", transferred);
+		return DC_STATUS_PROTOCOL;
+	}
+
+	// Verify the start byte.
+	if (buf[0] != 0xcd) {
+		ERROR (abstract->context, "Unexpected packet start byte (%02x).", buf[0]);
+		return DC_STATUS_PROTOCOL;
+	}
+
+	// Verify the length byte.
+	unsigned int length = buf[4];
+	if (length + 5 > transferred) {
+		ERROR (abstract->context, "Invalid packet length (%u).", length);
+		return DC_STATUS_PROTOCOL;
+	}
+
+	if (transferred > size)
+		ERROR(abstract->context, "RR Oversize packet (%u).", length);
+
+	memcpy(data, buf, transferred);
+
+	if (actual) {
+		*actual = transferred;
+	}
+
+	return DC_STATUS_SUCCESS;
+}
+
 /*
  * The BLE GATT packet size is up to 20 bytes and the format is:
  *
@@ -848,6 +922,12 @@ oceanic_atom2_device_open (dc_device_t **out, dc_context_t *context, dc_iostream
 		return DC_STATUS_NOMEMORY;
 	}
 
+	status = dc_context_auth(context);
+	if (status != DC_STATUS_SUCCESS) {
+		ERROR(context, "Failed to set the authentication.");
+		goto error_free;
+	}
+
 	// Initialize the base class.
 	oceanic_common_device_init (&device->base);
 
@@ -914,6 +994,15 @@ oceanic_atom2_device_open (dc_device_t **out, dc_context_t *context, dc_iostream
 
 	// Make sure everything is in a sane state.
 	dc_iostream_purge (device->iostream, DC_DIRECTION_ALL);
+
+	status = oceanic_atom2_device_versionRR((dc_device_t *)device, device->base.version, sizeof(device->base.version));
+	if (status != DC_STATUS_SUCCESS) {
+		goto error_free;
+	}
+
+	ERROR(context, "OK DONE.");
+	status = DC_STATUS_CANCELLED;
+	goto error_free;
 
 	// Switch the device from surface mode into download mode. Before sending
 	// this command, the device needs to be in PC mode (automatically activated
@@ -1007,6 +1096,45 @@ oceanic_atom2_device_keepalive (dc_device_t *abstract)
 	dc_status_t rc = oceanic_atom2_transfer (device, command, sizeof (command), ACK, NULL, 0, 0);
 	if (rc != DC_STATUS_SUCCESS)
 		return rc;
+
+	return DC_STATUS_SUCCESS;
+}
+
+
+dc_status_t
+oceanic_atom2_device_versionRR(dc_device_t *abstract, unsigned char data[], unsigned int size)
+{
+	oceanic_atom2_device_t *device = (oceanic_atom2_device_t *)abstract;
+	dc_status_t rc = DC_STATUS_SUCCESS;
+
+	unsigned char r0[RRBUFS] = {0};
+	unsigned char r1[RRBUFS] = {0};
+	unsigned char r2[RRBUFS] = {0};
+	unsigned char r3[RRBUFS] = {0};
+	unsigned char r4[RRBUFS] = {0};
+	unsigned char r5[RRBUFS] = {0};
+
+	if (!ISINSTANCE(abstract))
+		return DC_STATUS_INVALIDARGS;
+
+	if (size < PAGESIZE)
+		return DC_STATUS_INVALIDARGS;
+
+	if ((rc = oceanic_atom2_ble_writeRR_small(device, "\xcd\x40\xfa\xf6", "\x00\x00\x00\x00\x00\x00\x00\x00\x00", 9)) != DC_STATUS_SUCCESS)
+		ERROR(device->base.base.context, "WRITEFAIL");
+
+	if ((rc = oceanic_atom2_ble_readRR_small(device, r0, sizeof r0, NULL)) != DC_STATUS_SUCCESS)
+		ERROR(device->base.base.context, "READFAIL");
+	if (strncmp("\xcd\xc0\xfa\x94\x02\x01\x00", r0, 7))
+		ERROR(device->base.base.context, "READFCMP");
+
+	if ((rc = oceanic_atom2_ble_writeRR_small(device, "\xcd\x80\xfa\x42", "\x1a\x0c\x16\xff\x4e\x53\x15\x90\x00\x20\x47\x44\x31\x31\x20\xff", 16)) != DC_STATUS_SUCCESS)
+		ERROR(device->base.base.context, "WRITEFAIL");
+
+	if ((rc = oceanic_atom2_ble_readRR_small(device, r1, sizeof r0, NULL)) != DC_STATUS_SUCCESS)
+		ERROR(device->base.base.context, "READFAIL");
+	if (strncmp("\xcd\xc0\xfa\xae\x02\x02\x00", r1, 7))
+		ERROR(device->base.base.context, "READFCMP");
 
 	return DC_STATUS_SUCCESS;
 }

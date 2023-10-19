@@ -62,6 +62,9 @@ dc_status_t
 dc_context_log (dc_context_t *context, dc_loglevel_t loglevel, const char *file, unsigned int line, const char *function, const char *format, ...) DC_ATTR_FORMAT_PRINTF(6, 7);
 
 dc_status_t
+dc_context_auth(dc_context_t *context);
+
+dc_status_t
 dc_context_syserror (dc_context_t *context, dc_loglevel_t loglevel, const char *file, unsigned int line, const char *function, int errcode);
 
 dc_status_t

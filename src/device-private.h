@@ -51,9 +51,6 @@ struct dc_device_t {
 	// Cancellation support.
 	dc_cancel_callback_t cancel_callback;
 	void *cancel_userdata;
-	// Authentication support.
-	dc_auth_callback_t auth_callback;
-	void *auth_userdata;
 	// Cached events for the parsers.
 	dc_event_devinfo_t devinfo;
 	dc_event_clock_t clock;
@@ -90,9 +87,6 @@ dc_device_deallocate (dc_device_t *device);
 
 void
 device_event_emit (dc_device_t *device, dc_event_type_t event, const void *data);
-
-void
-device_auth (dc_device_t *device, unsigned char data[], size_t size);
 
 int
 device_is_cancelled (dc_device_t *device);
